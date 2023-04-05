@@ -1,0 +1,54 @@
+version: "3.8"
+
+services:
+  identity:
+    image: bfren/pixel-identity:latest
+    container_name: identity-server
+    restart: unless-stopped
+    environment:
+      - ASPNETCORE_URLS=http://+
+      - DOTNET_RUNNING_IN_CONTAINER=true
+      - DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
+      # required init values
+      - InitAdminUser=${IDENTITY_ADMIN_EMAIL}
+      - InitAdminUserPass=${IDENTITY_ADMIN_PASS}
+      - AllowedOrigins=https://${IDENTITY_DOMAIN}
+      - IdentityHost=https://${IDENTITY_DOMAIN}/pauth
+      # setup for PostgreSQL
+      - Plugins__Collection__0__Type=DbStore
+      - Plugins__Collection__0__Path=Plugins/DbStore
+      - Plugins__Collection__0__Name=Pixel.Identity.Store.PostgreSQL
+      - ConnectionStrings__PostgreServerConnection=Server=db;Database=identity;User ID=identity;Password=${DB_PASS}
+      # setup for SMTP
+      - Plugins__Collection__1__Type=EmailSender
+      - Plugins__Collection__1__Path=Plugins/Messenger
+      - Plugins__Collection__1__Name=Pixel.Identity.Messenger.Email
+      - SMTP__HOST=${SMTP_HOST}
+      - SMTP__PORT=${SMTP_PORT}
+      - SMTP__UserName=${SMTP_USER}
+      - SMTP__Password=${SMTP_PASS}
+      - SMTP__From=${SMTP_FROM}
+    networks:
+      - identity
+      - proxy
+  db:
+    image: bfren/postgresql:postgresql15
+    container_name: identity-db
+    restart: unless-stopped
+    environment:
+      - POSTGRESQL_BACKUP_COMPRESS_FILES=0
+      - POSTGRESQL_BACKUP_KEEP_FOR_DAYS=28
+      - POSTGRESQL_USERNAME=identity
+      - POSTGRESQL_PASSWORD=${DB_PASS}
+    volumes:
+      - ./v/db:/data
+      - ./v/db-backup:/backup
+    networks:
+      - identity
+
+networks:
+  identity:
+    driver: bridge
+    name: identity
+  proxy:
+    external: true
