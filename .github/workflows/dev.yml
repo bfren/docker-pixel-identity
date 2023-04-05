@@ -61,8 +61,8 @@ jobs:
         id: docker_build
         uses: docker/build-push-action@v4
         with:
-          context: ./pixel-identity
-          file: src/Pixel.Identity.Provider/Dockerfile
+          context: .
+          file: ./pixel-identity/src/Pixel.Identity.Provider/Dockerfile
           build-args: |
             BF_IMAGE=${{ env.REPOSITORY_NAME }}
             BF_VERSION=${{ steps.version.outputs.contents }}
